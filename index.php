@@ -1,109 +1,76 @@
 <?php
 
-// Include the Telegram Bot API library
-require 'path/to/telegram-bot-api.php';
+// تنظیمات
+$voiceChannelId = 'YOUR_VOICE_CHANNEL_ID'; // شناسه کانال صوتی در گروه
+$token = 'YOUR_BOT_TOKEN'; // توکن ربات شما در تلگرام
+$googleApiKey = 'YOUR_GOOGLE_API_KEY'; // کلید API یوتیوب شما
 
-// Set the bot token
-$botToken = 'YOUR_BOT_TOKEN';
+// دریافت دیتا از تلگرام
+$update = json_decode(file_get_contents('php://input'), true);
+$message = $update['message'];
+$text = $message['text'];
 
-// Create a new bot instance
-$bot = new TelegramBotAPI($botToken);
-
-// Get the chat ID
-$chatID = $bot->getChatID();
-
-// Check if it's the first time the user is starting the bot
-if (firstTimeUser($chatID)) {
-    // Send a welcome message to the user
-    $bot->sendMessage($chatID, 'سلام چه کمکی از دستم بر می‌آد؟ :)');
+// بررسی درخواست پخش موسیقی
+if ($text == 'پخش آهنگ') {
+    // ارسال درخواست به تلگرام برای شروع ضبط ویس
+    sendVoiceRecordingRequest($message['chat']['id'], $voiceChannelId, $token);
+} else if ($message['voice']) {
+    // دریافت فایل صوتی
+    $voice = $message['voice'];
+    $fileId = $voice['file_id'];
+    
+    // دریافت اطلاعات فایل صوتی
+    $fileInfo = getVoiceFileInformation($fileId, $token);
+    $fileUrl = $fileInfo['file_path'];
+    
+    // پخش موسیقی از طریق YouTube
+    playMusic($fileUrl, $googleApiKey);
 }
 
-// Handle the commands
-if (isset($_GET['command'])) {
-    $command = $_GET['command'];
-
-    if ($command == 'چخش') {
-        // Play the song from the beginning
-        playSong();
-    } elseif ($command == 'ایست') {
-        // Stop the song
-        stopSong();
-    } elseif ($command == '10 ثانیه جلو') {
-        // Skip 10 seconds forward in the song
-        skipSong(10);
-    }
+// تابع ارسال درخواست به تلگرام برای شروع ضبط ویس
+function sendVoiceRecordingRequest($chatId, $voiceChannelId, $token) {
+    $url = "https://api.telegram.org/bot$token/sendVoice";
+    $data = array(
+        'chat_id' => $chatId,
+        'voice_chat_id' => $voiceChannelId
+    );
+    file_get_contents($url . '?' . http_build_query($data));
 }
 
-// Function to check if it's the first time the user is starting the bot
-function firstTimeUser($chatID)
-{
-    // Replace with your database credentials
-    $servername = 'YOUR_DB_SERVERNAME';
-    $username = 'YOUR_DB_USERNAME';
-    $password = 'YOUR_DB_PASSWORD';
-    $dbname = 'YOUR_DB_NAME';
-
-    // Create a new MySQLi instance
-    $mysqli = new mysqli($servername, $username, $password, $dbname);
-
-    // Check if connection error
-    if ($mysqli->connect_error) {
-        die('Connection failed: ' . $mysqli->connect_error);
-    }
-
-    // Prepare the query
-    $stmt = $mysqli->prepare('SELECT * FROM users WHERE chat_id = ?');
-
-    // Bind the chat ID parameter
-    $stmt->bind_param('s', $chatID);
-
-    // Execute the query
-    $stmt->execute();
-
-    // Get the result
-    $result = $stmt->get_result();
-
-    // Check if user exists
-    if ($result->num_rows == 0) {
-        // User is starting the bot for the first time
-        // Insert the user's chat ID into the database
-        $stmt = $mysqli->prepare('INSERT INTO users (chat_id) VALUES (?)');
-        $stmt->bind_param('s', $chatID);
-        $stmt->execute();
-
-        // Close the statement
-        $stmt->close();
-
-        return true;
-    } else {
-        // User has used the bot before
-
-        // Close the statement
-        $stmt->close();
-
-        return false;
-    }
+// تابع دریافت اطلاعات فایل صوتی
+function getVoiceFileInformation($fileId, $token) {
+    $url = "https://api.telegram.org/bot$token/getFile";
+    $data = array(
+        'file_id' => $fileId
+    );
+    $response = file_get_contents($url . '?' . http_build_query($data));
+    return json_decode($response, true)['result'];
 }
 
-// Function to play the song from the beginning
-function playSong()
-{
-    // Implement your own logic to play the song from the beginning
-    // Use the audio player library or any other method to start playing the song
+// تابع پخش موسیقی از طریق YouTube
+function playMusic($fileUrl, $googleApiKey) {
+    $youtubeUrl = "https://www.googleapis.com/youtube/v3/search";
+    $data = array(
+        'part' => 'snippet',
+        'q' => 'music',
+        'type' => 'video',
+        'key' => $googleApiKey,
+        'maxResults' => 1
+    );
+    $response = file_get_contents($youtubeUrl . '?' . http_build_query($data));
+    $videoId = json_decode($response, true)['items'][0]['id']['videoId'];
+    
+    // ارسال درخواست پخش به تلگرام
+    sendMusicPlaybackRequest($videoId, $fileUrl);
 }
 
-// Function to stop the song
-function stopSong()
-{
-    // Implement your own logic to stop the song
-    // Use the audio player library or any other method to stop the currently playing song
+// تابع ارسال درخواست پخش به تلگرام
+function sendMusicPlaybackRequest($videoId, $fileUrl) {
+    $url = "https://api.telegram.org/bot$token/sendAudio";
+    $data = array(
+        'chat_id' => $chatId,
+        'audio' => $fileUrl,
+        'caption' => 'Now playing: ' . $videoId
+    );
+    file_get_contents($url . '?' . http_build_query($data));
 }
-
-// Function to skip forward in the song
-function skipSong($seconds)
-{
-    // Implement your own logic to skip forward in the song
-    // Use the audio player library or any other method to skip the specified number of seconds in the currently playing song
-}
-
-?>
