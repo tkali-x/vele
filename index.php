@@ -3,11 +3,8 @@
 // Include the Telegram Bot API library
 require 'path/to/telegram-bot-api.php';
 
-// Include the AudioPlayer library
-require 'path/to/audioplayer.php';
-
 // Set the bot token
-$botToken = '7094896891:AAFDdQUcOLlUwpSSPs9yp2wndS07t4nUzlQ';
+$botToken = 'YOUR_BOT_TOKEN';
 
 // Create a new bot instance
 $bot = new TelegramBotAPI($botToken);
@@ -16,9 +13,9 @@ $bot = new TelegramBotAPI($botToken);
 $chatID = $bot->getChatID();
 
 // Check if it's the first time the user is starting the bot
-if (firstTimeUser()) {
+if (firstTimeUser($chatID)) {
     // Send a welcome message to the user
-    $bot->sendMessage($chatID, 'سلام چه کمکی از دستم بر میاد؟:)');
+    $bot->sendMessage($chatID, 'سلام چه کمکی از دستم بر می‌آد؟ :)');
 }
 
 // Handle the commands
@@ -38,33 +35,75 @@ if (isset($_GET['command'])) {
 }
 
 // Function to check if it's the first time the user is starting the bot
-function firstTimeUser()
+function firstTimeUser($chatID)
 {
-    // Implement your own logic to check if it's the first time the user is starting the bot
-    // You can use a database or any other method to store and retrieve user information
-    // For example, you can check if the user's chat ID exists in your database
-    // Return true if it's the first time, or false if the user has used the bot before
+    // Replace with your database credentials
+    $servername = 'YOUR_DB_SERVERNAME';
+    $username = 'YOUR_DB_USERNAME';
+    $password = 'YOUR_DB_PASSWORD';
+    $dbname = 'YOUR_DB_NAME';
+
+    // Create a new MySQLi instance
+    $mysqli = new mysqli($servername, $username, $password, $dbname);
+
+    // Check if connection error
+    if ($mysqli->connect_error) {
+        die('Connection failed: ' . $mysqli->connect_error);
+    }
+
+    // Prepare the query
+    $stmt = $mysqli->prepare('SELECT * FROM users WHERE chat_id = ?');
+
+    // Bind the chat ID parameter
+    $stmt->bind_param('s', $chatID);
+
+    // Execute the query
+    $stmt->execute();
+
+    // Get the result
+    $result = $stmt->get_result();
+
+    // Check if user exists
+    if ($result->num_rows == 0) {
+        // User is starting the bot for the first time
+        // Insert the user's chat ID into the database
+        $stmt = $mysqli->prepare('INSERT INTO users (chat_id) VALUES (?)');
+        $stmt->bind_param('s', $chatID);
+        $stmt->execute();
+
+        // Close the statement
+        $stmt->close();
+
+        return true;
+    } else {
+        // User has used the bot before
+
+        // Close the statement
+        $stmt->close();
+
+        return false;
+    }
 }
 
 // Function to play the song from the beginning
 function playSong()
 {
     // Implement your own logic to play the song from the beginning
-    // Use the audio player library to start playing the song
+    // Use the audio player library or any other method to start playing the song
 }
 
 // Function to stop the song
 function stopSong()
 {
     // Implement your own logic to stop the song
-    // Use the audio player library to stop the currently playing song
+    // Use the audio player library or any other method to stop the currently playing song
 }
 
 // Function to skip forward in the song
 function skipSong($seconds)
 {
     // Implement your own logic to skip forward in the song
-    // Use the audio player library to skip the specified number of seconds in the currently playing song
+    // Use the audio player library or any other method to skip the specified number of seconds in the currently playing song
 }
 
 ?>
