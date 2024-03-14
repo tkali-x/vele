@@ -2,7 +2,7 @@
 
 // تنظیمات
 $voiceChannelId = 'YOUR_VOICE_CHANNEL_ID'; // شناسه کانال صوتی در گروه
-$token = 'YOUR_BOT_TOKEN'; // توکن ربات شما در تلگرام
+$token = '7094896891:AAFDdQUcOLlUwpSSPs9yp2wndS07t4nUzlQ'; // توکن ربات شما در تلگرام
 $googleApiKey = 'YOUR_GOOGLE_API_KEY'; // کلید API یوتیوب شما
 
 // دریافت دیتا از تلگرام
